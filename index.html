@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Velara Color Picker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;900&display=swap">
+<style>
+:root{--page:#FFFFFF;--ink:#363536}
+body{background:var(--page);color:var(--ink);font-family:"Figtree","proxima-nova",Arial,sans-serif}
+.pg{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 64px}
+/* Velara Color Picker — scoped to .vcp so theme styles don't collide */
+.vcp{--vcp-navy:#1C3E75;--vcp-ink:#363536;--vcp-muted:#6B6E75;--vcp-line:#DDE1E7;--vcp-soft:#F3F5F8;--vcp-white:#FFFFFF;
+  --vcp-ncs:#14866A;--vcp-ral:#2F5FC4;--vcp-sik:#B5541B;
+  font-family:inherit;color:var(--vcp-ink);max-width:1200px;margin:0 auto;font-size:16px;line-height:1.45;box-sizing:border-box}
+.vcp *,.vcp *::before,.vcp *::after{box-sizing:border-box}
+.vcp [hidden]{display:none!important}
+.vcp-head{margin-bottom:20px}
+.vcp-title{font-family:inherit;font-weight:900;font-size:clamp(28px,4vw,40px);letter-spacing:-.01em;color:var(--vcp-navy);margin:0 0 6px;line-height:1.1}
+.vcp-intro{margin:0;color:var(--vcp-muted);max-width:62ch}
+.vcp-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:32px;background:var(--vcp-white);border:1px solid var(--vcp-line);border-radius:6px;padding:22px}
+.vcp-col{min-width:0;display:flex;flex-direction:column;gap:14px}
+.vcp-label{font-family:inherit;font-size:20px;font-weight:600;color:var(--vcp-navy);margin:0;letter-spacing:-.01em}
+.vcp-sublabel{font-family:inherit;font-size:13px;font-weight:700;color:var(--vcp-navy);margin:0 0 8px;text-transform:uppercase;letter-spacing:.06em}
+
+/* big swatch */
+.vcp-big{cursor:zoom-in;position:relative;aspect-ratio:1.05;max-height:340px;width:100%;border-radius:3px;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);transition:background-color .2s ease;color:#fff}
+.vcp-big.is-light{color:#1d1d1f}
+.vcp-sheen{position:absolute;inset:0;background:linear-gradient(115deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 38%),linear-gradient(180deg,rgba(255,255,255,0) 55%,rgba(0,0,0,.12));pointer-events:none}
+.vcp-big-sys{position:relative;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.vcp-big-code{position:relative;font-size:clamp(26px,3.4vw,36px);font-weight:700;line-height:1.1;overflow-wrap:anywhere}
+.vcp-big-sub{position:relative;font-size:13px;opacity:.85}
+.vcp-match{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--vcp-muted);background:var(--vcp-soft);border-radius:4px;padding:8px 10px}
+.vcp-match i{width:22px;height:22px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)}
+.vcp-match b{color:var(--vcp-ink)}
+
+.vcp-hex{display:flex;border:1px solid var(--vcp-line);border-radius:3px;overflow:hidden;margin:0}
+.vcp-hex span{background:var(--vcp-soft);padding:10px 14px;font-size:14px;font-weight:600;color:var(--vcp-muted);white-space:nowrap;border-right:1px solid var(--vcp-line)}
+.vcp-hex input{flex:1;min-width:0;border:0;padding:10px 14px;font:inherit;font-size:16px;text-align:center;color:var(--vcp-ink);background:var(--vcp-white);text-transform:uppercase}
+.vcp-hex input:focus{outline:2px solid var(--vcp-navy);outline-offset:-2px}
+
+.vcp-specs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0}
+.vcp-specs div{min-width:0}
+.vcp-specs dt{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--vcp-muted)}
+.vcp-specs dd{margin:2px 0 0;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.vcp-btns{display:flex;flex-wrap:wrap;gap:8px}
+.vcp .vcp-btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--vcp-navy);background:var(--vcp-navy);color:#fff;border-radius:52px;padding:9px 18px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-decoration:none;line-height:1.2;margin:0;transition:background-color .15s,color .15s}
+.vcp .vcp-btn:hover{background:#142d57;border-color:#142d57;color:#fff}
+.vcp .vcp-btn-ghost{background:transparent;color:var(--vcp-navy)}
+.vcp .vcp-btn-ghost:hover{background:var(--vcp-soft);color:var(--vcp-navy)}
+.vcp .vcp-btn-cta{margin-left:auto}
+.vcp .vcp-btn:focus-visible,.vcp button:focus-visible,.vcp input:focus-visible{outline:2px solid var(--vcp-navy);outline-offset:2px}
+
+.vcp-near-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.vcp-near-row button{appearance:none;border:0;padding:0;background:none;cursor:pointer;text-align:left;min-width:0;font-family:inherit;color:inherit}
+.vcp-near-row button i{display:block;aspect-ratio:1;border-radius:3px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.vcp-near-row button b{display:block;font-size:11px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vcp-near-row button small{display:block;font-size:10px;color:var(--vcp-muted)}
+
+/* tabs */
+.vcp-tabs{display:flex;gap:4px;border-bottom:1px solid var(--vcp-line)}
+.vcp .vcp-tab{appearance:none;border:0;background:none;padding:8px 4px 10px;margin:0 14px -1px 0;font-family:inherit;font-size:18px;font-weight:600;color:var(--vcp-muted);cursor:pointer;border-bottom:3px solid transparent;letter-spacing:-.01em}
+.vcp .vcp-tab[aria-selected="true"]{color:var(--vcp-navy);border-bottom-color:var(--vcp-navy)}
+.vcp-pane{display:flex;flex-direction:column;gap:10px;min-width:0}
+.vcp-search{width:100%;border:1px solid var(--vcp-line);border-radius:3px;padding:10px 12px;font:inherit;font-size:15px;color:var(--vcp-ink);background:var(--vcp-white)}
+.vcp-chips{display:flex;flex-wrap:wrap;gap:6px}
+.vcp .vcp-chip{appearance:none;border:1px solid var(--vcp-line);background:var(--vcp-white);color:var(--vcp-ink);border-radius:52px;padding:5px 11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin:0;line-height:1.3}
+.vcp .vcp-chip[aria-pressed="true"]{background:var(--vcp-navy);border-color:var(--vcp-navy);color:#fff}
+.vcp-chip i{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.2)}
+.vcp-chip small{font-size:11px;opacity:.7;font-weight:400}
+.vcp-count{font-size:13px;color:var(--vcp-muted)}
+.vcp-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px;max-height:430px;overflow-y:auto;padding:3px;overscroll-behavior:contain}
+.vcp-grid button{appearance:none;border:0;margin:0;padding:0;aspect-ratio:1;border-radius:3px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);transition:transform .1s}
+.vcp-grid button:hover{transform:scale(1.08)}
+.vcp-grid button[aria-current="true"]{box-shadow:0 0 0 2px #fff,0 0 0 4px var(--vcp-navy)}
+.vcp-empty{grid-column:1/-1;color:var(--vcp-muted);font-size:14px;padding:24px 0;text-align:center}
+
+/* spectrum */
+.vcp-help{margin:0;font-size:14px;color:var(--vcp-muted)}
+.vcp-spec{display:flex;gap:12px;height:clamp(240px,40vw,420px)}
+.vcp-sv{position:relative;flex:1;min-width:0;border-radius:2px;cursor:crosshair;touch-action:none;background-image:linear-gradient(0deg,#000,rgba(0,0,0,0)),linear-gradient(90deg,#fff,rgba(255,255,255,0))}
+.vcp-hue{position:relative;width:26px;flex:none;border-radius:2px;cursor:ns-resize;touch-action:none;background:linear-gradient(180deg,#f00 0%,#ff0 16.66%,#0f0 33.33%,#0ff 50%,#00f 66.66%,#f0f 83.33%,#f00 100%)}
+.vcp-dots{position:absolute;inset:0;pointer-events:none}
+.vcp-dots i{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;border:1.5px solid rgba(255,255,255,.95);box-shadow:0 0 0 1px rgba(0,0,0,.35);pointer-events:auto;cursor:pointer}
+.vcp-dots i.on{width:14px;height:14px;margin:-7px 0 0 -7px;border-width:2px}
+.vcp-knob{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 1px 4px rgba(0,0,0,.4);pointer-events:none}
+.vcp-hknob{position:absolute;left:-3px;right:-3px;height:8px;margin-top:-4px;border:2px solid #fff;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none}
+
+.vcp-note{font-size:12px;color:var(--vcp-muted);margin:12px 0 0;text-align:center}
+.vcp-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--vcp-navy,#1C3E75);color:#fff;padding:9px 16px;border-radius:52px;font-size:14px;font-weight:600;z-index:9999;opacity:0;transition:opacity .2s;pointer-events:none;font-family:inherit}
+.vcp-toast.on{opacity:1}
+
+@media (max-width:860px){
+  .vcp-card{grid-template-columns:minmax(0,1fr);gap:24px;padding:16px}
+  .vcp-big{aspect-ratio:1.6}
+  .vcp-specs{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .vcp .vcp-btn-cta{margin-left:0}
+  .vcp-grid{max-height:360px}
+}
+@media (prefers-reduced-motion:reduce){.vcp *{transition:none!important}}
+@media (max-width:600px){.vcp-near-row{grid-template-columns:repeat(3,minmax(0,1fr))}.vcp-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}.vcp .vcp-chip{flex:none}}
+
+/* maximized color view (appended to body, so it carries its own tokens) */
+.vcp-big-zoom{position:absolute;top:12px;right:12px;font-size:12px;font-weight:700;letter-spacing:.04em;padding:5px 10px;border-radius:52px;background:rgba(0,0,0,.28);color:#fff;opacity:.85;transition:opacity .15s}
+.vcp-big:hover .vcp-big-zoom,.vcp-big:focus-visible .vcp-big-zoom{opacity:1}
+.vcp-big:focus-visible{outline:2px solid var(--vcp-navy);outline-offset:3px}
+html.vcp-lock,html.vcp-lock body{overflow:hidden}
+.vcp-max{--mx-fg:#fff;--mx-soft:rgba(255,255,255,.78);--mx-line:rgba(255,255,255,.35);--mx-chip:rgba(0,0,0,.22);
+  position:fixed;inset:0;z-index:2147483000;color:var(--mx-fg);font-family:inherit;display:flex;align-items:flex-end;
+  padding:max(24px,env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) max(28px,env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px));
+  opacity:0;transform:scale(.985);transition:opacity .22s ease,transform .22s ease,background-color .25s ease;box-sizing:border-box}
+.vcp-max *,.vcp-max *::before,.vcp-max *::after{box-sizing:border-box}
+.vcp-max.on{opacity:1;transform:none}
+.vcp-max[hidden]{display:none!important}
+.vcp-max.is-light{--mx-fg:#1d1d1f;--mx-soft:rgba(0,0,0,.68);--mx-line:rgba(0,0,0,.25);--mx-chip:rgba(255,255,255,.4)}
+.vcp-max-sheen{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.16),rgba(255,255,255,0) 40%),linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.14))}
+.vcp-max-info{position:relative;max-width:900px;display:flex;flex-direction:column;gap:14px}
+.vcp-max-sys{font-size:14px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mx-soft)}
+.vcp-max-code{font-size:clamp(48px,11vw,132px);font-weight:900;line-height:.95;letter-spacing:-.02em;overflow-wrap:anywhere}
+.vcp-max-specs{display:flex;flex-wrap:wrap;gap:10px 36px;margin:4px 0 0;padding-top:14px;border-top:1px solid var(--mx-line)}
+.vcp-max-specs dt{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mx-soft)}
+.vcp-max-specs dd{margin:2px 0 0;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.vcp-max-btns{display:flex;flex-wrap:wrap;gap:10px}
+.vcp-max .vcp-max-btn{appearance:none;margin:0;display:inline-flex;align-items:center;border:1.5px solid var(--mx-fg);background:transparent;color:var(--mx-fg);border-radius:52px;padding:10px 20px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;text-decoration:none;line-height:1.2}
+.vcp-max .vcp-max-btn:hover{background:var(--mx-chip);color:var(--mx-fg)}
+.vcp-max .vcp-max-cta{background:var(--mx-fg);color:#1C3E75}
+.vcp-max.is-light .vcp-max-cta{color:#fff;background:#1C3E75;border-color:#1C3E75}
+.vcp-max-note{margin:0;font-size:13px;color:var(--mx-soft)}
+.vcp-max-keys{margin-left:10px}
+.vcp-max .vcp-max-x{appearance:none;margin:0;position:absolute;top:max(18px,env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));border:0;background:var(--mx-chip);color:var(--mx-fg);border-radius:52px;padding:9px 16px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.04em;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.vcp-max-x b{font-size:20px;line-height:1;font-weight:400}
+.vcp-max .vcp-max-nav{appearance:none;margin:0;position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;border:0;background:var(--mx-chip);color:var(--mx-fg);font-size:34px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0 0 4px}
+.vcp-max-prev{left:max(16px,env(safe-area-inset-left,0px))}
+.vcp-max-next{right:max(16px,env(safe-area-inset-right,0px))}
+.vcp-max button:focus-visible,.vcp-max a:focus-visible{outline:2px solid var(--mx-fg);outline-offset:3px}
+@media (max-width:600px){.vcp-max .vcp-max-nav{top:auto;bottom:auto;top:max(18px,env(safe-area-inset-top,0px));transform:none;width:42px;height:42px;font-size:28px}
+  .vcp-max-prev{left:max(16px,env(safe-area-inset-left,0px))}.vcp-max-next{left:calc(max(16px,env(safe-area-inset-left,0px)) + 50px);right:auto}.vcp-max-keys{display:none}.vcp-max-specs{gap:10px 24px}.vcp-max-specs dd{font-size:17px}}
+@media (prefers-reduced-motion:reduce){.vcp-max{transition:none}}
+</style>
+</head>
+<body>
+<div class="pg"><div class="vcp" data-vcp data-cta-url="" data-default="RAL 5009">
+  <div class="vcp-head">
+    <h2 class="vcp-title">Pick Color</h2>
+    <p class="vcp-intro">Browse 1,267 Velara colors across NCS, RAL and Sikkens, or drag the spectrum to find the closest match.</p>
+  </div>
+  <div class="vcp-card">
+    <div class="vcp-col">
+      <h3 class="vcp-label">Selected color</h3>
+      <div class="vcp-big" data-el="big" role="button" tabindex="0" aria-label="View selected color full screen">
+        <span class="vcp-big-zoom" aria-hidden="true">&#x2922; Full screen</span>
+        <span class="vcp-sheen" aria-hidden="true"></span>
+        <span class="vcp-big-sys" data-el="bigSys"></span>
+        <span class="vcp-big-code" data-el="bigCode"></span>
+        <span class="vcp-big-sub" data-el="bigSub"></span>
+      </div>
+      <div class="vcp-match" data-el="match" hidden></div>
+      <label class="vcp-hex">
+        <span>Match a hex code</span>
+        <input type="text" data-el="hexIn" placeholder="#035B93" maxlength="7" spellcheck="false" autocomplete="off">
+      </label>
+      <dl class="vcp-specs">
+        <div><dt>System</dt><dd data-el="sSys"></dd></div>
+        <div><dt>Hex</dt><dd data-el="sHex"></dd></div>
+        <div><dt>RGB</dt><dd data-el="sRgb"></dd></div>
+        <div><dt>LRV est.</dt><dd data-el="sLrv"></dd></div>
+      </dl>
+      <div class="vcp-btns">
+        <button type="button" class="vcp-btn" data-act="copyCode">Copy code</button>
+        <button type="button" class="vcp-btn" data-act="copyHex">Copy hex</button>
+        <button type="button" class="vcp-btn vcp-btn-ghost" data-act="random">Random</button>
+        <a class="vcp-btn vcp-btn-cta" data-el="cta" href="#" hidden>Request a sample</a>
+      </div>
+      <div class="vcp-near">
+        <h4 class="vcp-sublabel">Closest in the collection</h4>
+        <div class="vcp-near-row" data-el="near"></div>
+      </div>
+    </div>
+
+    <div class="vcp-col">
+      <div class="vcp-tabs" role="tablist">
+        <button type="button" role="tab" class="vcp-tab" data-tab="browse" aria-selected="true">Browse collection</button>
+        <button type="button" role="tab" class="vcp-tab" data-tab="spectrum" aria-selected="false">Spectrum</button>
+      </div>
+
+      <div class="vcp-pane" data-pane="browse">
+        <input type="search" class="vcp-search" data-el="q" placeholder="Search code or hex: RAL 7035, 1502-Y, F6.05.50" autocomplete="off">
+        <div class="vcp-chips" data-el="sys" aria-label="Color system"></div>
+        <div class="vcp-chips vcp-fam" data-el="fam" aria-label="Color family"></div>
+        <div class="vcp-count" data-el="count"></div>
+        <div class="vcp-grid" data-el="grid"></div>
+      </div>
+
+      <div class="vcp-pane" data-pane="spectrum" hidden>
+        <p class="vcp-help">Drag anywhere on the spectrum. The picker snaps to the closest Velara color. Dots mark collection colors at this hue.</p>
+        <div class="vcp-spec">
+          <div class="vcp-sv" data-el="sv">
+            <div class="vcp-dots" data-el="dots"></div>
+            <span class="vcp-knob" data-el="knob"></span>
+          </div>
+          <div class="vcp-hue" data-el="hue"><span class="vcp-hknob" data-el="hknob"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="vcp-note">Digital swatches are close approximations for reference only. Verify against official physical color samples before specification. LRV is estimated from the screen color.</p>
+</div>
+</div>
+<script>(function(){
+"use strict";
+var RAW="RAL 9005|R|0E0E10;RAL 8022|R|1A1718;9000N|N|191919;8500N|N|262626;8505Y80R|N|292524;8505Y20R|N|292825;RAL 9011|R|27292B;8502B|N|272829;8502G|N|272928;8502R|N|292727;RAL 9017|R|2A292A;RAL 9004|R|2B2B2C;ON.00.10|S|2C2C2B;8010G10Y|N|2F362F;8005Y80R|N|363130;RAL 7021|R|2F3234;8005B20G|N|323536;8005G50Y|N|353632;8005Y20R|N|363532;8000N|N|333333;RAL 8019|R|3D3635;RAL 6015|R|3D3D36;0002500|R|3B3B3B;7502B|N|414344;7502G|N|414442;7502Y|N|444341;7500N|N|404040;RAL 7024|R|45494E;RAL 7022|R|4C4A44;0003000|R|474747;7010G10Y|N|465146;7005R80B|N|474951;7005Y80R|N|514947;7005G|N|49514C;7005Y50R|N|514C49;7005G50Y|N|4F514A;7005Y20R|N|514F4A;G2.04.26|S|4D4C47;7005G20Y|N|4D514B;7005G80Y|N|51514B;SN.01.18|S|494A4B;ON.01.26|S|4C4C4D;7000N|N|4D4D4D;R6.05.31|S|4F5659;RAL 7015|R|4F5358;F4.05.23|S|585550;RAL 7043|R|4F5250;RAL 7011|R|52595D;RAL 7010|R|585C56;T8.03.26|S|555758;6500N|N|595959;RAL 7009|R|5D6058;RAL 7012|R|575D5E;K3.06.34|S|595F58;F1.03.27|S|5C5A57;6502R|N|5E595A;6502G|N|5A5E5C;6502Y50R|N|5E5C5A;6502B|N|5B5D5E;6502G50Y|N|5E5E5B;6502Y|N|5E5E5B;ON.00.33|S|5F5D5D;F2.05.35|S|665F57;G0.11.31|S|666257;LN.02.37|S|616563;ON.00.36|S|626160;6010G10Y|N|5D6C5D;RAL 7039|R|6B665E;6005R80B|N|5F616C;6005Y80R|N|6C615F;6005Y50R|N|6C6661;C7.03.33|S|6B6461;6005Y20R|N|6C6962;6005B20G|N|636A6C;6005G20Y|N|666C63;6005G50Y|N|6A6C63;FN.02.37|S|6A6762;6005G80Y|N|6C6B64;6000N|N|666666;E4.06.35|S|746E67;F9.05.35|S|706D66;V8.05.35|S|6A6972;RAL 7005|R|6C6E6B;RAL 7003|R|7A7669;H1.09.41|S|777669;E4.05.45|S|80776F;5502R|N|797373;5502Y80R|N|797473;5502G|N|747976;5502B|N|757779;5502B50G|N|757979;5502G50Y|N|787975;5502Y|N|797975;0005000|R|777777;5500N|N|737373;F2.05.45|S|7F7971;RAL 7033|R|7F8274;RAL 7023|R|808076;RAL 7037|R|7A7B7A;5010B50G|N|738786;5010G70Y|N|868773;C8.04.45|S|8B7F79;CN.02.47|S|8B7F79;5005R80B|N|777A87;5005Y50R|N|877F79;5005G50Y|N|84877B;5005Y20R|N|87837B;5005B20G|N|7C8587;5005G20Y|N|7F877C;5005R50B|N|877C84;H4.05.47|S|87877D;K0.05.47|S|80877D;L8.05.45|S|78827C;F3.03.44|S|817E79;5000N|N|808080;F6.08.48|S|8E887B;RAL 7046|R|7F868A;ON.00.50|S|858585;F6.05.50|S|90897F;RAL 7030|R|928E85;4500N|N|8C8C8C;W2.05.49|S|8C8994;RAL 7045|R|8D9295;4502G|N|8E9490;4502Y50R|N|94908E;RAL 7042|R|8E9291;RAL 7001|R|8C969D;G0.05.55|S|9A9489;E4.05.55|S|9A9189;F2.05.55|S|9B948C;RAL 7036|R|979392;4502B|N|8F9294;4502B50G|N|8F9494;4502Y|N|94938F;4005Y50R|N|A19891;F8.05.55|S|A19B91;4005Y20R|N|A19D93;4005R50B|N|A1949F;4005G80Y|N|A1A195;4005Y|N|A19F95;RAL 7004|R|9B9B9B;4000N|N|999999;F1.04.56|S|A39C95;7040|R|989EA1;CN.02.57|S|A09A98;SN.02.57|S|999C9F;ON.00.58|S|9D9D9B;0006500|R|9E9E9E;ON.00.60|S|A2A1A0;ON.00.59|S|A1A1A1;3502R|N|AFA5A6;JN.02.61|S|A9ACA5;3500N|N|A6A6A6;FN.02.67|S|B5B1AA;3502G|N|A7AFAA;RAL 7038|R|B0B0A9;3502B|N|A8ACAF;3502B50G|N|A9AFAE;3502R50B|N|AFA9AE;3502Y|N|AFAEA9;H0.04.65|S|B6B5AA;L0.04.65|S|ADB8AF;F0.03.66|S|BAB6B0;TN.01.65|S|B3B5B7;3000N|N|B2B2B2;0007500|R|B9B9B9;CN.00.70|S|C1BFBD;MN.00.70|S|BBBEBB;2500N|N|BFBFBF;ON.01.70|S|C1C1BE;TN.01.71|S|C1C2C3;2502G|N|C1C9C4;2502Y50R|N|C9C5C1;RAL 9018|R|C8CBC4;2502B|N|C2C7C9;2502B50G|N|C3C9C9;2502Y|N|C9C8C3;RAL 7035|R|C5C7C4;RAL 7047|R|C8C8C7;LN.02.77|S|CBD2CC;SN.02.77|S|CBD0D2;ON.00.76|S|C8CBC8;NN.00.76|S|CBCDCB;SN.00.75|S|CECFCE;2000N|N|CCCCCC;ON.00.78|S|D1D2D0;K0.03.81|S|D9DCD6;JN.00.81|S|DBDBD7;PN.00.81|S|DADDDB;ON.01.80|S|DCDCDB;1500N|N|D9D9D9;SN.00.81|S|DEDEDE;VN.01.82|S|DEDEDE;ON.00.90|S|E9E9E7;ON.00.86|S|E3E4E2;1000N|N|E6E6E6;0500N|N|F2F2F2;0502Y80R|N|FFF5F2;0603Y80R|N|FCEDEA;0505Y90R|N|FFE2E0;1002Y80R|N|F2E8E6;0804Y90R|N|F7E0DF;0510Y70R|N|FFD7CA;1005Y80R|N|F2DAD5;0510Y90R|N|FFC9C6;0907Y90R|N|F4CFCC;1505Y70R|N|E4D1CB;1010Y80R|N|F2C5BC;1505Y80R|N|E4CEC9;1505Y90R|N|E4CAC9;1010Y90R|N|F2BFBB;0208010|R|DBC0C0;1510Y80R|N|E4BAB2;1510Y90R|N|E4B4B1;0408010|R|DAC1BB;2005Y80R|N|D7C2BD;2005Y90R|N|D7BFBD;0208005|R|D1C3C3;1020Y90R|N|F29993;1515Y90R|N|E4A19D;2010Y70R|N|D7B5AA;2010Y90R|N|D7AAA7;0530Y90R|N|FF827A;0407030|R|DE9B89;3005Y80R|N|BCAAA6;C6.22.61|S|DA9886;0540Y90R|N|FF6A5F;2020Y70R|N|D79B87;2020Y90R|N|D78883;2030Y90R|N|D76E67;0306030|R|C47F77;0306020|R|B48580;4005Y80R|N|A1918E;0406020|R|B3867B;0570Y80R|N|FF4A25;0580Y90R|N|FF2A1C;3030Y80R|N|BC6B5A;B8.35.45|S|BD5856;0585Y80R|N|FF3A10;1080Y90R|N|F2281A;1085Y90R|N|F22315;0305030|R|A7655F;C4.41.40|S|B45D50;2060Y80R|N|D74A2C;4020Y80R|N|A16D62;1085Y80R|N|F23710;3040Y80R|N|BC5A46;0405040|R|B1614D;1580Y90R|N|E42619;0405030|R|A56757;2070Y90R|N|D72E22;0305010|R|89726F;3050Y80R|N|BC4C35;5010Y90R|N|876A68;4030Y80R|N|A15C4D;2570Y80R|N|C93B1D;3060Y80R|N|BC4127;5020Y80R|N|875B52;C5.33.31|S|8E5248;3560Y90R|N|AF2F26;RAL 3016|R|A63D2F;3560Y80R|N|AF3C24;RAL 3020|R|BB1E10;RAL 3000|R|A72920;5030Y80R|N|874C40;5030Y90R|N|874540;C3.39.26|S|874840;C3.38.25|S|83473F;RAL 3001|R|9B2423;4550Y80R|N|943C2A;RAL 3013|R|972E25;RAL 3002|R|9B2321;5040Y80R|N|874032;C4.33.22|S|75463E;5540Y90R|N|79322D;6030Y80R|N|6C3D33;RAL 3011|R|792423;RAL 3009|R|6D342D;7010Y70R|N|514440;RAL 8015|R|5E2F26;RAL 8017|R|442F29;8010Y90R|N|362B2A;0502Y50R|N|FFF9F4;0603Y60R|N|FCF2EC;0505Y50R|N|FFF0E6;BN.02.87|S|F3EBE8;0804Y50R|N|F7ECE3;1002Y50R|N|F2ECE8;DN.01.86|S|F1EAE5;0510Y50R|N|FFE3CF;1005Y40R|N|F2E6DB;1005Y50R|N|F2E4DA;1005Y60R|N|F2E1D8;0907Y50R|N|F4E1D3;C9.05.82|S|F1D9D0;CN.00.88|S|F1D9D0;1502Y50R|N|E4DFDB;DN.01.82|S|E0DBD7;E7.05.80|S|E8DBCE;1505Y50R|N|E4D7CD;0708505|R|DCD3CC;C9.03.77|S|DECFC9;2002Y50R|N|D7D2CE;E3.04.77|S|DCD1C7;E4.05.76|S|DACEC3;E7.03.76|S|D7CEC6;1510Y60R|N|E4C6B7;1510Y70R|N|E4C1B4;2005Y50R|N|D7CBC1;2005Y60R|N|D7C8C0;2005Y70R|N|D7C5BF;1020Y50R|N|F2C29E;0508010|R|D8C2B8;0608005|R|CFC5BE;1515Y50R|N|E4C1A6;0708010|R|D4C4B5;E5.05.77|S|D3C4B6;1515Y60R|N|E4BAA4;D4.04.71|S|CEC2BA;1515Y70R|N|E4B2A1;2010Y50R|N|D7BFAE;2010Y60R|N|D7BBAC;E0.03.72|S|CAC0B9;EN.02.71|S|CAC0B9;DN.01.71|S|C7C0BC;D0.07.67|S|CDB5AD;E8.05.70|S|C7BCB3;E3.07.69|S|C9B9AC;C8.04.67|S|C2B4AE;E0.04.67|S|C2B7AD;3005Y50R|N|BCB1A9;2020Y50R|N|D7AC8D;2020Y60R|N|D7A48A;D6.05.65|S|BCADA4;E4.05.65|S|BBAEA5;D2.05.63|S|B9A9A2;3010Y40R|N|BCAB9A;0607020|R|C8A48C;3010Y50R|N|BCA898;0607030|R|D5A07D;C9.21.58|S|CD927E;2030Y50R|N|D79C71;2030Y60R|N|D7916E;E4.20.60|S|C39E7F;E0.07.57|S|AB9C92;E2.17.58|S|BD9A7F;D0.03.56|S|A69C96;3020Y50R|N|BC977B;3020Y60R|N|BC9079;RAL 3012|R|C6846D;3020Y70R|N|BC8876;E1.15.56|S|B29680;D2.08.53|S|A59188;D5.12.55|S|AB8F82;D6.05.55|S|9F9189;0506040|R|C97E5C;E0.15.55|S|AC8D77;E7.10.53|S|A19182;0606010|R|A08D82;3030Y50R|N|BC8963;RAL 1019|R|A48F7A;3030Y60R|N|BC7F60;0580Y50R|N|FF7C1B;2050Y60R|N|D77542;3030Y70R|N|BC755D;E1.14.50|S|A28976;D9.41.49|S|C07D54;D0.34.47|S|BB7358;0606050|R|CC7E44;E5.21.49|S|A98566;E4.22.49|S|A68668;1080Y60R|N|F26218;D0.31.44|S|B17059;0606060|R|D47A33;3040Y60R|N|BC724B;3040Y70R|N|BC6649;2070Y50R|N|D77024;D8.24.44|S|9C755E;D8.12.43|S|8E796B;RAL 2010|R|D05D28;D2.35.45|S|AD6648;E4.34.45|S|A47651;3050Y70R|N|BC5938;D6.60.50|S|D16623;RAL 2011|R|E26E0E;0605010|R|857469;2570Y50R|N|C96922;3060Y50R|N|BC6A2D;4040Y60R|N|A16241;D1.43.36|S|9D5A43;E0.10.40|S|806D60;0605050|R|AE652C;3560Y50R|N|AF622A;3560Y60R|N|AF5628;4050Y50R|N|A16234;5030Y50R|N|876247;RAL 8023|R|A45729;E4.30.40|S|8D633F;RAL 8001|R|9D622B;6010Y50R|N|6C6057;4550Y60R|N|94502E;E8.12.31|S|6B6157;6010Y70R|N|6C5B55;0504040|R|904C2D;RAL 8025|R|755847;0604010|R|6C5B50;5040Y70R|N|874934;RAL 8002|R|794D3E;6020Y50R|N|6C5647;D6.30.30|S|7B4E37;RAL 8024|R|795038;D2.10.30|S|63524B;RAL 8003|R|7E4B26;6030Y60R|N|6C4937;RAL 8007|R|70452A;RAL 8008|R|724A25;7010Y50R|N|514842;0603005|R|4D4540;0603010|R|534439;0603020|R|5D402C;7020Y60R|N|513E34;RAL 8011|R|5A3826;RAL 8028|R|513A2A;RAL 8014|R|4A3526;RAL 8016|R|4C2B20;8010Y50R|N|36302C;8010Y70R|N|362E2B;0502Y20R|N|FFFCF6;0603Y20R|N|FCF8EF;0603Y40R|N|FCF5EE;0505Y20R|N|FFF8E9;0507Y20R|N|FFF5E1;0804Y10R|N|F7F3E7;0804Y30R|N|F7F0E5;1002Y20R|N|F2EFE9;GN.02.90|S|F4EFE2;0510Y20R|N|FFF1D5;RAL 9010|R|F1ECE1;F5.09.86|S|FCEDD4;F2.07.88|S|F7E9D9;F6.05.86|S|F5ECDB;F3.04.86|S|F2EADE;FN.01.85|S|EDE9E3;FN.01.86|S|ECE9E4;1005Y20R|N|F2EBDD;1005Y30R|N|F2E9DC;0907Y30R|N|F4E8D6;F8.07.85|S|F2E8D4;FN.01.84|S|E6E4E0;F9.04.83|S|EAE4D7;F6.06.84|S|EEE4D2;0909005|R|E7E2D9;F0.03.84|S|E7E3D9;F2.03.84|S|E7E1D9;1502Y20R|N|E4E2DC;1010Y20R|N|F2E5CA;E0.03.82|S|E5DED7;FN.02.82|S|E5DFD7;E7.05.82|S|ECDFCF;F2.06.84|S|EBE0D0;RAL 9001|R|E9E0D2;1010Y30R|N|F2E1C8;1010Y40R|N|F2DCC6;FN.01.81|S|DFDDD8;F8.06.82|S|E6DFD0;G0.04.81|S|E5DFD1;1505Y20R|N|E4DED1;1505Y30R|N|E4DCD0;1505Y40R|N|E4DACF;F6.09.82|S|EBDEC7;F6.07.82|S|EADEC8;F8.07.83|S|E9DEC8;F6.19.85|S|FCE2B0;F3.03.80|S|DED8CE;RAL 1013|R|E3D9C6;F0.08.79|S|E7D5C1;G0.08.84|S|E7DBC1;E8.15.80|S|F3D5B4;1015Y30R|N|F2D9B5;2002Y20R|N|D7D4CF;G0.05.80|S|DCD5C7;1510Y20R|N|E4D8BE;E7.07.79|S|E3D2BF;F0.06.79|S|DED3C4;F6.06.78|S|DED5C4;F7.04.77|S|DAD4C8;1510Y30R|N|E4D4BD;1510Y40R|N|E4D0BB;F4.07.76|S|DFD2BF;F4.06.78|S|DCD1C1;F9.03.76|S|D5D1C8;EN.02.78|S|D4CFC9;EN.01.85|S|D4CFC9;RAL 1015|R|E6D2B5;2005Y20R|N|D7D1C4;2005Y30R|N|D7CFC3;1020Y20R|N|F2DAA7;F3.12.78|S|E6D1B3;2005Y40R|N|D7CDC2;F0.12.77|S|E6CFB2;G0.10.80|S|E0D3B8;F2.04.74|S|D5CDC3;FN.02.77|S|D2CEC6;1020Y30R|N|F2D2A4;F3.09.75|S|DCCDB7;1020Y40R|N|F2CAA1;F6.07.77|S|DACDB9;1515Y20R|N|E4D3AE;F3.11.77|S|E0CDB2;F1.11.77|S|DFCCB3;1515Y30R|N|E4CDAB;F2.15.76|S|E5CCA9;F6.08.75|S|D6CCB8;F0.06.74|S|D4C9BA;G0.05.75|S|D2CCBC;F6.06.74|S|D3CABB;F2.05.75|S|D0C8BD;2010Y20R|N|D7CBB3;F3.08.75|S|D5C8B4;F4.04.73|S|CDC6BC;0808005|R|CCC5BD;2010Y30R|N|D7C8B2;F4.06.73|S|D0C7B9;F3.17.76|S|E6CCA2;0758010|R|D3C4B5;2010Y40R|N|D7C4B0;0808010|R|D1C5B4;F9.15.75|S|DDCCA7;E9.11.74|S|D9C3AB;G0.10.75|S|D6C9AE;F6.03.72|S|C9C4BA;F0.13.73|S|DBC2A4;F3.13.73|S|D9C4A5;1030Y20R|N|F2D089;E7.23.73|S|EABE90;E8.10.70|S|D3BDA7;F4.10.70|S|CFC0AB;F0.09.71|S|D0BFA9;RAL 1014|R|DDC49A;F2.10.70|S|CDBDA8;F4.08.69|S|C9BDAB;0540Y20R|N|FFD374;F6.05.70|S|C2BBAE;F8.12.71|S|CDBFA2;E6.05.68|S|C4B8AB;F6.06.69|S|C4BCAB;G0.05.70|S|C1BBAE;2020Y20R|N|D7C295;2020Y30R|N|D7BB92;3005Y20R|N|BCB7AC;1040Y20R|N|F2C86E;F0.25.69|S|DDB683;E8.15.66|S|CCB194;E7.15.62|S|CCB194;F3.12.67|S|C5B49B;RAL 7044|R|B7B3A8;G0.16.68|S|C7B894;F0.09.65|S|BEAF9D;F0.06.64|S|BAAEA1;F1.45.74|S|FDC05D;3010Y20R|N|BCB29D;3010Y30R|N|BCAF9C;RAL 7032|R|B5B0A1;F2.05.65|S|B4ACA2;G0.05.65|S|B4AEA2;F6.04.63|S|B2AEA3;RAL 1001|R|D0B084;2030Y20R|N|D7B97A;F2.30.70|S|DDB573;2030Y30R|N|D7B077;2030Y40R|N|D7A674;F5.09.61|S|B2A795;F9.10.60|S|B0A692;F2.40.70|S|E8B159;F0.08.59|S|AFA292;RAL 1002|R|D2AA6D;0707040|R|D7A067;3020Y20R|N|BCA982;F2.10.60|S|AEA08F;F0.20.61|S|BEA17E;3020Y30R|N|BCA480;3020Y40R|N|BC9D7E;0857030|R|C3A875;2040Y40R|N|D79B5C;G0.25.65|S|C3AD6F;0570Y20R|N|FFBD31;1060Y40R|N|F2993D;E8.15.56|S|AE967E;E8.30.60|S|C49764;F0.10.54|S|A39585;3030Y20R|N|BCA26B;4010Y30R|N|A19685;3030Y30R|N|BC9A68;G3.12.56|S|A19982;3030Y40R|N|BC9266;1070Y20R|N|F2B32F;F0.20.54|S|AC9272;0580Y40R|N|FF901D;F2.50.65|S|DDA23C;F2.10.50|S|988B7C;E8.23.52|S|A98C6A;4020Y20R|N|A19170;2060Y30R|N|D79738;3040Y30R|N|BC9253;4020Y30R|N|A18C6E;E8.20.50|S|A18668;RAL 1024|R|BA8F4C;F1.67.59|S|DA992B;RAL 1020|R|A08F65;RAL 1012|R|DDAF27;F0.19.48|S|9B8569;RAL 7034|R|92886F;3050Y20R|N|BC9544;G0.10.50|S|8E8571;RAL 1011|R|AF804F;4030Y30R|N|A18459;4030Y40R|N|A17D57;5010Y10R|N|878171;RAL 1023|R|F7B500;RAL 1021|R|F6B600;5010Y30R|N|877D6F;RAL 1037|R|F09200;2570Y30R|N|C98725;3060Y30R|N|BC8431;RAL 7002|R|817863;RAL 1006|R|E29000;RAL 1032|R|E2A300;5020Y30R|N|87755B;5020Y40R|N|87715A;RAL 7006|R|766A5E;5030Y30R|N|876E4A;F2.10.40|S|756A5C;F8.41.46|S|947A38;E7.10.35|S|71665B;RAL 1005|R|CB8E00;RAL 8000|R|89693E;6010Y30R|N|6C6459;5040Y20R|N|876F3D;0705055|R|A76917;6020Y40R|N|6C5A48;RAL 7008|R|745E3D;6030Y20R|N|6C5D3D;6030Y30R|N|6C583C;6030Y40R|N|6C533A;E8.17.22|S|5B4F43;RAL 7013|R|575044;7010Y30R|N|514B43;7020Y30R|N|514637;RAL 6022|R|3A3327;0502Y|N|FFFEF7;0505Y|N|FFFCEB;0505Y10R|N|FFFAEA;0507G80Y|N|FFFEE5;0804G90Y|N|F7F5E8;1002Y|N|F2F0EA;RAL 9016|R|F1F0EA;0510G80Y|N|FFFEDA;0510Y|N|FFF9D8;0510Y10R|N|FFF5D6;G0.05.88|S|F5F0E0;GN.01.88|S|EFEEE6;1005G80Y|N|F2F1E0;1005G90Y|N|F2F0DF;1005Y|N|F2EFDF;1005Y10R|N|F2EDDE;0907Y10R|N|F4EED9;G4.04.88|S|F0EBDB;0515Y|N|FFF6C6;1010G80Y|N|F2F1CF;1502Y|N|E4E3DD;1009005|R|E5E3D9;0520G80Y|N|FFFDB9;1505G90Y|N|E4E3D3;HN.02.82|S|E1E0D6;1505Y10R|N|E4E0D1;0520Y|N|FFF4B5;0520Y10R|N|FFEDB3;1015Y|N|F2EABC;2002Y|N|D7D6D0;1510G90Y|N|E4E1C2;1510Y10R|N|E4DCC0;H0.09.80|S|DFDDC3;RAL 9002|R|D7D5CB;1020G80Y|N|F2F0AF;2005G80Y|N|D7D6C7;2005G90Y|N|D7D5C6;2005Y10R|N|D7D3C5;0530G90Y|N|FFF598;0530Y|N|FFEF96;1515Y|N|E4DDB1;1515Y10R|N|E4D8B0;0530Y10R|N|FFE694;G5.07.77|S|D6D0BD;G4.05.77|S|D3CFC0;2010G90Y|N|D7D4B7;2010Y10R|N|D7CFB5;G5.07.73|S|CCC6B3;2020G80Y|N|D7D59C;H1.11.70|S|C4C1A6;G8.10.70|S|C0BBA5;G6.04.66|S|B9B7AC;1040Y10R|N|F2D371;0550Y10R|N|FFD95E;3010G90Y|N|BCB9A0;G5.24.72|S|D0C48B;3010Y|N|BCB89F;3010Y10R|N|BCB59E;0958040|R|D9C67B;1050G80Y|N|F2ED60;1050G90Y|N|F2E35E;0560G90Y|N|FFEE4C;0560Y|N|FFE44A;G0.50.80|S|FCD94A;G4.15.65|S|B8AF8E;3020Y|N|BCB486;3020Y10R|N|BCAF84;2040Y10R|N|D7BC65;1060G90Y|N|F2E148;0570G80Y|N|FFF938;G4.10.60|S|A8A38F;0570G90Y|N|FFEC37;0570Y10R|N|FFCF33;0575G90Y|N|FFEB2D;RAL 1018|R|FACA30;4010G90Y|N|A19F89;3030Y10R|N|BCA96D;RAL 1016|R|F1DD38;4010Y10R|N|A19B88;2050Y10R|N|D7B750;0580Y|N|FFDE22;0580Y10R|N|FFCB21;1075G90Y|N|F2DE2A;4020G90Y|N|A19D74;3040Y10R|N|BCA558;1006010|R|95917F;4020Y10R|N|A19671;1080Y10R|N|F2C01F;3050Y10R|N|BCA046;4030G90Y|N|A19B60;4030Y|N|A1975F;4030Y10R|N|A1915D;5010G90Y|N|878572;F5.72.71|S|F5B800;3060Y10R|N|BC9C35;G0.50.60|S|B99A2D;5020Y10R|N|877D5E;4050Y10R|N|A1893C;5030G90Y|N|878150;RAL 6013|R|7D765A;6010Y10R|N|6C685B;7010Y10R|N|514E44;G5.17.19|S|4C493D;RAL 6006|R|3C392E;8010Y10R|N|36342E;0601Y|N|FCFCF8;JN.00.88|S|F1F2ED;1002G50Y|N|F0F2EA;JN.00.87|S|F0F1EA;1005G50Y|N|EDF2DE;H0.01.86|S|EAEBE5;GN.00.85|S|E8E8E3;0515G60Y|N|F7FFC6;H8.04.85|S|E7E8D9;JN.02.83|S|E2E3DE;1109005|R|E3E3D9;1505G80Y|N|E4E4D3;J0.05.85|S|E0E1D0;1510G60Y|N|DFE4C2;HN.02.77|S|D5D5CD;2005G70Y|N|D6D7C7;2005G60Y|N|D4D7C6;H6.05.78|S|D3D7C6;2005G50Y|N|D3D7C5;2010G70Y|N|D5D7B7;2010G60Y|N|D2D7B6;2010G50Y|N|CFD7B5;1030G70Y|N|EDF292;H3.04.72|S|C2C3B6;3005G80Y|N|BCBCAE;H9.09.69|S|BCC1A9;3010G70Y|N|BBBCA1;H7.18.71|S|BAC596;3010G60Y|N|B8BC9F;2030G70Y|N|D3D781;H4.16.70|S|BCBF97;0560G50Y|N|D5FF48;3020G50Y|N|AFBC84;H8.12.61|S|A7AB92;0565G50Y|N|D2FF3D;2040G50Y|N|BDD765;J0.10.60|S|A2A592;4010G70Y|N|A0A18A;4010G50Y|N|9BA188;H6.15.58|S|9DA484;2060G60Y|N|C1D73F;4020G70Y|N|9FA174;H7.15.53|S|919679;4030G70Y|N|9EA161;5030G70Y|N|848751;6010G70Y|N|6B6C5C;6010G50Y|N|686C5B;H7.18.35|S|686C56;6020G70Y|N|6A6C4E;H8.21.30|S|5F644F;6030G70Y|N|6A6C41;6030G50Y|N|616C3E;7010G70Y|N|505145;RAL 6003|R|50533C;J1.07.87|S|EAF1DA;1502G50Y|N|E2E4DD;1010G30Y|N|DFF2CB;J2.03.81|S|DBDFD3;2002G50Y|N|D5D7D0;1515G40Y|N|D2E4AD;2010G40Y|N|CBD7B3;3010G40Y|N|B2BC9D;2030G30Y|N|ACD77F;J0.05.65|S|AEB2A4;1050G30Y|N|AAF260;3020G30Y|N|A1BC85;1060G30Y|N|A1F24D;0570G30Y|N|A1FF3F;3020G40Y|N|A9BC82;1060G40Y|N|B7F242;4010G30Y|N|95A188;1075G40Y|N|AEF226;RAL 6021|R|8A9977;4030G30Y|N|81A15F;3060G30Y|N|7DBC3C;H8.22.39|S|71795D;RAL 6011|R|6C7C59;RAL 6025|R|5E6E3B;8010G50Y|N|34362E;0804G20Y|N|ECF7E8;1005G20Y|N|E4F2DF;1005G30Y|N|E8F2DE;0515G20Y|N|D8FFC9;0520G20Y|N|CEFFB9;JN.02.82|S|D9DDD5;1020G20Y|N|C3F2B0;0530G20Y|N|BAFF9E;2005G20Y|N|CBD7C6;1515G20Y|N|C2E4B4;2010G30Y|N|C6D7B5;J9.07.73|S|BEC8B7;J5.03.71|S|BFC5BA;3005G20Y|N|B2BCAE;3010G20Y|N|A8BCA0;3010G30Y|N|ADBC9E;1307010|R|A5AE9D;2040G20Y|N|8FD771;3020G20Y|N|98BC89;1070G20Y|N|7CF24B;2075G20Y|N|6AD73D;5010G30Y|N|7C8771;3560G20Y|N|61AF42;RAL 6018|R|61993B;RAL 6017|R|587F40;6030G30Y|N|566C40;RAL 6010|R|4D6F39;7020G30Y|N|455139;RAL 6020|R|37422F;8010G30Y|N|32362E;1408040|R|9BD595;1509305|R|E4EDE6;1010G10Y|N|D0F2D1;L0.03.81|S|D7DFD8;1020G10Y|N|B3F2B6;L0.04.78|S|CBD7CB;2010G10Y|N|B9D7BA;1508010|R|B9CBBD;2030G10Y|N|8AD78D;3010G10Y|N|A2BCA3;3020G10Y|N|8BBC8E;L0.10.60|S|90A291;4010G10Y|N|8BA18C;4040G10Y|N|5AA15D;1505020|R|5E7F65;6020G10Y|N|506C51;RAL 6009|R|27352A;0502G|N|F4FFF8;0505G|N|E5FFEF;0507G|N|DBFFE9;1002G|N|E7F2EB;1502G|N|DBE4DE;0515G|N|B9FFD4;2002G|N|CED7D1;1015G|N|AFF2C9;1510G|N|B8E4C9;2005G|N|C1D7C9;1515G|N|A5E4BE;2010G|N|ADD7BD;2020G|N|8CD7A9;3010G|N|98BCA6;1606015|R|799887;4550G|N|2F9456;5540G|N|32794D;RAL 6028|R|315442;1010B90G|N|C7F2DE;0520B90G|N|ACFFDA;1020B90G|N|A3F2CE;2010B90G|N|B1D7C6;1030B90G|N|84F2C0;2020B90G|N|91D7B7;N0.05.65|S|A6B5B1;3010B90G|N|9BBCAD;2030B90G|N|75D7AB;3020B90G|N|7FBCA1;5010B90G|N|6F877C;1705015|R|5C7E72;6020B90G|N|496C5C;RAL 6000|R|3C7460;6030B90G|N|3B6C56;7010B90G|N|43514B;7020B90G|N|375145;RAL 6016|R|00694C;8010B90G|N|2D3632;RAL 6005|R|114232;1602020|R|103726;0507B80G|N|E2FFF9;0804B50G|N|E8F7F6;1005B80G|N|DEF2ED;N9.04.86|S|DDEEEC;1010B50G|N|CFF2F0;1010B70G|N|CDF2EC;1809005|R|D8E5E2;PN.02.82|S|D6E1DF;0520B60G|N|B7FFF8;1015B80G|N|BAF2E5;1510B50G|N|C3E4E3;1020B60G|N|ADF2EB;1020B70G|N|ACF2E7;2005B50G|N|C7D7D6;2005B80G|N|C5D7D3;1515B80G|N|B0E4D9;2010B50G|N|B8D7D6;2010B70G|N|B6D7D2;N7.04.73|S|B9CAC6;2020B60G|N|9AD7D1;P1.12.73|S|A2CDCB;3005B80G|N|ADBCB9;1040B80G|N|72F2D5;3010B50G|N|A1BCBB;2030B60G|N|80D7CF;1050B50G|N|60F2ED;1050B60G|N|5EF2E4;1050B80G|N|5AF2D0;3020B60G|N|87BCB7;RAL 6027|R|7EBAB5;2050B80G|N|50D7B9;3040B50G|N|5DBCB9;P1.21.54|S|64A09E;4040B50G|N|50A19F;5030B70G|N|4F877E;RAL 6033|R|46877F;1805020|R|4C8076;6010B70G|N|5B6C69;5040B80G|N|3F8777;6020B70G|N|4D6C67;5540B80G|N|39796B;7010B70G|N|45514F;P0.30.30|S|175E5C;RAL 6012|R|303D3A;8010B70G|N|2E3635;RAL 6004|R|024442;0502B50G|N|F7FFFF;0507B20G|N|E3FAFF;1005B20G|N|DEEEF2;0907B20G|N|DAF0F4;R7.04.82|S|D8E3E4;2002B50G|N|D0D7D7;1510B20G|N|C1DEE4;1020B30G|N|ADEBF2;2005B20G|N|C6D4D7;Q3.06.77|S|C1D5D7;1515B20G|N|B1DCE4;2020B30G|N|9AD1D7;1040B20G|N|74DDF2;3010B30G|N|A0B9BC;2030B30G|N|80CFD7;1050B30G|N|5EE4F2;2040B30G|N|69CCD7;4010B10G|N|879BA1;RAL 6034|R|7AACAC;4020B30G|N|749DA1;2206015|R|6E97A1;2555B20G|N|43B3C9;3050B20G|N|47A9BC;4030B30G|N|609BA1;R4.41.54|S|31A2C4;5030B30G|N|508187;6010B30G|N|5C6A6C;RAL 5012|R|0089B6;5540B40G|N|3C7779;5540B30G|N|3B7379;7010B10G|N|444E51;2004020|R|2B6769;RAL 5018|R|058B8C;7020B30G|N|3A4F51;2304030|R|006983;2103010|R|324B4E;2003010|R|324B4C;RAL 5021|R|007577;2103015|R|234D52;8010B10G|N|2D3436;RAL 5020|R|00414B;2202020|R|003743;0502B|N|F6FCFF;0601B|N|F8FBFC;1002B|N|E9EEF2;0510B|N|D4EFFF;TN.02.82|S|DADFE2;1010B|N|C8E2F2;S1.09.81|S|CBE1EC;S1.05.81|S|D2DEE5;S1.10.80|S|C6DEEB;S3.08.80|S|CADDE7;S2.08.79|S|C7DBE6;1015B|N|B6DBF2;2002B|N|CFD4D7;1020B10G|N|A9DFF2;2005B|N|C4D0D7;1020B|N|A5D5F2;1515B|N|ACCFE4;0530B|N|8ED5FF;2508020|R|A3CCE9;2010B10G|N|B4CED7;2408010|R|B3CAD6;S8.16.73|S|A5C8E3;1030B|N|87CAF2;0540B|N|72CAFF;2020B10G|N|96C6D7;S1.16.68|S|9ABED0;1040B10G|N|71D1F2;S6.15.65|S|97B4C9;S2.11.63|S|9CB3BF;3010B10G|N|9EB4BC;3010B|N|9CB0BC;S4.04.62|S|A4AEB2;2030B10G|N|7CC0D7;2030B|N|78B3D7;1050B10G|N|59CBF2;1050B|N|55B7F2;T0.10.60|S|94A5B3;3020B|N|81A6BC;T0.30.60|S|68A9D4;T4.16.56|S|859FB7;2040B|N|60AAD7;S2.07.58|S|919FA6;S6.27.56|S|6EA4C4;1060B|N|40AFF2;1555B10G|N|4ABDE4;3030B10G|N|6CA8BC;2050B10G|N|4FB4D7;3030B|N|699DBC;T3.25.51|S|6A91B4;1565B|N|34A2E4;T0.10.50|S|7C8B98;4020B|N|6E8EA1;S0.10.50|S|7A8B94;RAL 5024|R|6093AC;3050B10G|N|459EBC;4030B10G|N|5D90A1;3060B10G|N|359ABC;2505020|R|537C96;5020B10G|N|5E7C87;S2.17.39|S|5F7986;5020B|N|5C7787;2305015|R|577D8A;4050B10G|N|3B87A1;5030B10G|N|4D7887;5030B|N|4B7087;RAL 7031|R|5B686D;5040B10G|N|3F7487;6010B10G|N|5A676C;S0.09.30|S|596369;5045B10G|N|387287;6020B10G|N|4B636C;6020B|N|4A5F6C;RAL 5015|R|007CB0;6030B10G|N|3E606C;6030B|N|3C5A6C;RAL 5009|R|225F78;T7.48.24|S|0F598A;T2.42.23|S|1F567A;RAL 5017|R|005B8C;7020B|N|374751;RAL 5005|R|005387;RAL 5019|R|005E83;S0.06.21|S|3A4145;RAL 5010|R|004F7C;RAL 7016|R|383E42;RAL 5001|R|0F4C64;RAL 5008|R|2B3A44;0804R90B|N|E2E9F7;0510R90B|N|CCDDFF;0515R90B|N|B6CEFF;1010R90B|N|C1D1F2;T4.08.76|S|C6D3E2;0520R90B|N|A3C1FF;1015R90B|N|ADC3F2;2005R90B|N|C0C8D7;1020R90B|N|9AB7F2;1515R90B|N|A3B9E4;U0.10.70|S|AFBFD5;2010R90B|N|ACBAD7;0530R90B|N|82ABFF;1030R90B|N|7BA2F2;0540R90B|N|6698FF;3010R90B|N|96A3BC;1040R90B|N|6090F2;2030R90B|N|6D90D7;T9.15.55|S|8A9DB7;3020R90B|N|788FBC;2040R90B|N|5680D7;4010R90B|N|818CA1;3030R90B|N|607EBC;2050R90B|N|4273D7;1560R90B|N|346EE4;3040R90B|N|4B70BC;2065R90B|N|2962D7;4030R90B|N|526CA1;3060R90B|N|2B5BBC;3065R90B|N|2456BC;5020R90B|N|566687;T0.10.40|S|626E7A;5030R90B|N|445A87;6010R90B|N|565D6C;4550R90B|N|2D4F94;5040R90B|N|365087;6020R90B|N|45526C;5540R90B|N|304879;7010R90B|N|414651;7020R90B|N|343D51;RAL 5002|R|00387B;RAL 5003|R|1F3855;RAL 5013|R|193153;8010R90B|N|2B2F36;RAL 5011|R|1A2B3C;RAL 5004|R|191E28;0603R80B|N|EAEDFC;0507R80B|N|D6DEFF;VN.02.85|S|E2E3E9;1005R80B|N|D5DAF2;1010R80B|N|BDC6F2;U9.05.75|S|C5C7D3;1510R80B|N|B2BBE4;2005R80B|N|BEC2D7;1020R80B|N|94A5F2;1515R80B|N|9EABE4;2010R80B|N|A8B0D7;1030R80B|N|748BF2;3005R80B|N|A6AABC;3010R80B|N|939ABC;1040R80B|N|5A76F2;2030R80B|N|677CD7;3020R80B|N|7381BC;4020R80B|N|636EA1;5020R80B|N|525C87;5030R80B|N|404D87;4550R80B|N|2A3D94;5040R80B|N|324287;2903035|R|36437A;6020R80B|N|424A6C;6030R80B|N|343E6C;RAL 5022|R|222D5A;W0.05.65|S|AFACB9;2030R70B|N|9B7BD7;3050R70B|N|7148BC;RAL 4005|R|76689A;5020R70B|N|6B5D87;8010R70B|N|302D36;2005R60B|N|D1C4D7;1515R60B|N|D3AEE4;3020R60B|N|AA82BC;3030R60B|N|A26BBC;4030R60B|N|8B5BA1;3555R60B|N|8837AF;4050R60B|N|803AA1;5040R60B|N|6F3D87;6030R60B|N|5D3D6C;3207025|R|C1A0C8;RAL 4001|R|816183;1002R50B|N|F2EAF0;1005R50B|N|F2DEEE;1502R50B|N|E4DDE3;4010R50B|N|A1889C;3050R50B|N|BC47A6;5020R50B|N|875F7F;5030R50B|N|874F7C;X7.30.21|S|684568;7020R50B|N|51394C;8010R50B|N|362E35;Y2.12.74|S|E8BFDC;2002R50B|N|D7D0D5;Y8.12.61|S|C59BB1;RAL 4009|R|9D8692;Z0.20.40|S|8F5B77;RAL 4007|R|47243C;0510R30B|N|FFCCDC;0520R30B|N|FFA3C0;2010R30B|N|D7ABB9;0530R30B|N|FF81A9;3507035|R|E294B7;1030R30B|N|F27AA0;3010R30B|N|BC96A2;1040R30B|N|F2608E;2030R40B|N|D774A5;3020R30B|N|BC788E;1060R30B|N|F23772;2050R40B|N|D7488F;4030R40B|N|A1577C;4050R40B|N|A1366B;5040R40B|N|873A60;7020R40B|N|513643;RAL 4004|R|651E38;8010R30B|N|362B2F;0502R|N|FFF1F2;0505R20B|N|FFE1E7;0507R20B|N|FFD7DF;1002R|N|F2E4E5;0907R10B|N|F4CBD0;1502R|N|E4D8D9;0108510|R|E9CED1;0515R10B|N|FFADB7;2002R|N|D7CBCC;0520R20B|N|FF9DB1;0520R10B|N|FF99A5;2005R20B|N|D7BEC3;1015R|N|F2A1A7;1510R|N|E4AEB1;2005R|N|D7BBBD;2502R|N|C9BEBF;RAL 3015|R|D8A0A6;0530R10B|N|FF7787;A5.11.61|S|CAA0A7;1030R20B|N|F2758E;1030R10B|N|F27180;3005R20B|N|BCA6AB;0540R|N|FF5963;1040R10B|N|F2576A;0206030|R|C57D80;RAL 3014|R|CB7375;4005R20B|N|A18F92;3020R|N|BC6E73;0565R|N|FF2937;1060R10B|N|F23048;RAL 3017|R|CB555D;1070R10B|N|F2213B;3030R|N|BC555C;1080R|N|F21422;1580R|N|E41320;B1.08.37|S|816A6B;0304060|R|AF2D31;5020R20B|N|87535D;0104040|R|9A4055;3560R|N|AF212B;4050R10B|N|A12C3A;RAL 4002|R|8D3C4B;5030R10B|N|873F47;6010R10B|N|6C5356;6020R10B|N|6C4146;RAL 3003|R|861A22;6030R10B|N|6C3239;A0.05.25|S|534649;RAL 3004|R|6B1C23;RAL 3005|R|59191F";
+var SYS={N:"NCS",R:"RAL",S:"Sikkens"};
+var FAM=[["white","Whites","#F3F2EE"],["grey","Greys","#9A9C9E"],["black","Blacks","#222222"],["beige","Beiges","#D8C7A6"],["brown","Browns","#6E4E3A"],["red","Reds","#B3262E"],["orange","Oranges","#E07A2A"],["yellow","Yellows","#E8C23A"],["green","Greens","#4E8A4E"],["blue","Blues","#3B6FB0"],["purple","Purples","#7A4E8E"]];
+
+function lin(v){v/=255;return v<=0.04045?v/12.92:Math.pow((v+0.055)/1.055,2.4)}
+function toLab(r,g,b){var R=lin(r),G=lin(g),B=lin(b);
+  var x=(R*0.4124+G*0.3576+B*0.1805)/0.95047,y=R*0.2126+G*0.7152+B*0.0722,z=(R*0.0193+G*0.1192+B*0.9505)/1.08883;
+  function f(t){return t>0.008856?Math.cbrt(t):7.787*t+16/116}
+  x=f(x);y=f(y);z=f(z);return[116*y-16,500*(x-y),200*(y-z)]}
+function rgb2hsv(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn,h=0;
+  if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
+  return[h,mx?d/mx:0,mx]}
+function hsv2rgb(h,s,v){var c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c,r=0,g=0,b=0;
+  if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}
+  return[Math.round((r+m)*255),Math.round((g+m)*255),Math.round((b+m)*255)]}
+function family(r,g,b){r/=255;g/=255;b/=255;var mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn,s=d===0?0:d/(1-Math.abs(2*l-1)),h=0;
+  if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
+  if(d<0.06||s<0.1)return l>0.82?"white":l<0.18?"black":"grey";
+  if(h>=15&&h<65){if(l>0.62&&s<0.6)return l>0.88?"white":"beige";if(l<0.42||(s<0.35&&l<0.6))return"brown"}
+  if((h<15||h>=345)&&l<0.3&&s<0.5)return"brown";
+  if(h<15||h>=335)return"red";if(h<42)return"orange";if(h<68)return"yellow";if(h<170)return"green";if(h<255)return"blue";return"purple"}
+function hex2(n){return("0"+n.toString(16)).slice(-2).toUpperCase()}
+
+var C=RAW.split(";").map(function(s,i){var p=s.split("|"),hx=p[2],r=parseInt(hx.slice(0,2),16),g=parseInt(hx.slice(2,4),16),b=parseInt(hx.slice(4),16);
+  var Y=0.2126*lin(r)+0.7152*lin(g)+0.0722*lin(b);
+  return{i:i,code:p[0],sys:p[1],hex:"#"+hx.toUpperCase(),r:r,g:g,b:b,lrv:Math.round(Y*1000)/10,lab:toLab(r,g,b),hsv:rgb2hsv(r,g,b),fam:family(r,g,b),
+    id:p[0].replace(/\s+/g,""),key:p[0].toLowerCase().replace(/[\s\-]/g,"")+"|"+hx.toLowerCase()}});
+var byId={};C.forEach(function(c){byId[c.id]=c});
+function dE(a,b){return Math.sqrt(Math.pow(a[0]-b[0],2)+Math.pow(a[1]-b[1],2)+Math.pow(a[2]-b[2],2))}
+function nearest(lab,n,skip){return C.filter(function(c){return c!==skip}).map(function(c){return[dE(lab,c.lab),c]}).sort(function(a,b){return a[0]-b[0]}).slice(0,n)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(m){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]})}
+
+var toastEl;
+function toast(msg){if(!toastEl){toastEl=document.createElement("div");toastEl.className="vcp-toast";document.body.appendChild(toastEl)}
+  toastEl.textContent=msg;toastEl.classList.add("on");clearTimeout(toastEl._t);toastEl._t=setTimeout(function(){toastEl.classList.remove("on")},1600)}
+function copy(text,label){function fb(){var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();toast(ok?label+" copied":text)}
+  try{navigator.clipboard.writeText(text).then(function(){toast(label+" copied")},fb)}catch(e){fb()}}
+
+function init(root){
+  if(root._vcp)return;root._vcp=true;
+  function $(n){return root.querySelector('[data-el="'+n+'"]')}
+  var st={sel:null,q:"",sys:"all",fam:"all",hue:210,s:0.7,v:0.6,tab:"browse"};
+  var ctaBase=(root.getAttribute("data-cta-url")||"").trim();
+  if(ctaBase&&ctaBase.indexOf("{{")<0)$("cta").hidden=false;
+
+  // chips
+  var cnt={N:0,R:0,S:0},fc={};C.forEach(function(c){cnt[c.sys]++;fc[c.fam]=(fc[c.fam]||0)+1});
+  function chips(el,items,key){
+    el.innerHTML=items.map(function(it){return'<button type="button" class="vcp-chip" data-v="'+it[0]+'" aria-pressed="'+(st[key]===it[0])+'">'+(it[2]?'<i style="background:'+it[2]+'"></i>':"")+it[1]+(it[3]!=null?" <small>"+it[3]+"</small>":"")+"</button>"}).join("");
+    el.addEventListener("click",function(e){var b=e.target.closest(".vcp-chip");if(!b)return;st[key]=b.getAttribute("data-v");
+      Array.prototype.forEach.call(el.children,function(x){x.setAttribute("aria-pressed",String(x===b))});renderGrid()})}
+  chips($("sys"),[["all","All systems",null,C.length],["N","NCS",null,cnt.N],["R","RAL",null,cnt.R],["S","Sikkens",null,cnt.S]],"sys");
+  chips($("fam"),[["all","All colors"]].concat(FAM.map(function(f){return[f[0],f[1],f[2],fc[f[0]]||0]})),"fam");
+
+  function norm(s){return s.toLowerCase().replace(/[\s\-#]/g,"").replace(/^s(?=\d{4})/,"")}
+  function renderGrid(){
+    var q=norm(st.q);
+    var r=st.list=C.filter(function(c){return(st.sys==="all"||c.sys===st.sys)&&(st.fam==="all"||c.fam===st.fam)&&(!q||c.key.indexOf(q)>=0)});
+    $("grid").innerHTML=r.length?r.map(function(c){return'<button type="button" data-id="'+c.id+'" style="background:'+c.hex+'" title="'+esc(c.code)+" · "+SYS[c.sys]+" · "+c.hex+'" aria-label="'+esc(c.code)+'" aria-current="'+(st.sel&&st.sel.id===c.id)+'"></button>'}).join(""):'<div class="vcp-empty">No colors match. Try a shorter code or clear the filters.</div>';
+    $("count").textContent=r.length.toLocaleString()+" of "+C.length.toLocaleString()+" colors";
+  }
+  $("grid").addEventListener("click",function(e){var b=e.target.closest("button[data-id]");if(b){select(byId[b.getAttribute("data-id")],{moveSpectrum:true});openMax(b)}});
+  var qt;$("q").addEventListener("input",function(e){clearTimeout(qt);qt=setTimeout(function(){st.q=e.target.value;renderGrid()},90)});
+
+  function select(c,opt){opt=opt||{};if(!c)return;st.sel=c;
+    var big=$("big");big.style.backgroundColor=c.hex;big.classList.toggle("is-light",c.lrv>45);
+    $("bigSys").textContent=SYS[c.sys];$("bigCode").textContent=c.code;$("bigSub").textContent=c.hex+"  ·  rgb("+c.r+", "+c.g+", "+c.b+")";
+    $("sSys").textContent=SYS[c.sys];$("sHex").textContent=c.hex;$("sRgb").textContent=c.r+", "+c.g+", "+c.b;$("sLrv").textContent=c.lrv.toFixed(1);
+    if(!opt.keepHex)$("hexIn").value=c.hex;
+    if(opt.target){var m=$("match");m.hidden=false;m.innerHTML='<i style="background:'+opt.target+'"></i><span>Your pick <b>'+opt.target+'</b> is closest to <b>'+esc(c.code)+'</b> ('+(opt.d<2.3?"near-identical":opt.d<6?"close match":"nearest available")+")</span>"}
+    else $("match").hidden=true;
+    $("near").innerHTML=nearest(c.lab,6,c).map(function(n){return'<button type="button" data-id="'+n[1].id+'" title="'+esc(n[1].code)+" · "+n[1].hex+'"><i style="background:'+n[1].hex+'"></i><b>'+esc(n[1].code)+"</b><small>"+SYS[n[1].sys]+"</small></button>"}).join("");
+    Array.prototype.forEach.call($("grid").querySelectorAll('[aria-current="true"]'),function(x){x.setAttribute("aria-current","false")});
+    var gr=$("grid"),g=gr.querySelector('[data-id="'+c.id+'"]');if(g){g.setAttribute("aria-current","true");if(opt.scrollGrid){var top=g.offsetTop-gr.clientHeight/2+g.offsetHeight/2;gr.scrollTop=Math.max(0,top)}}
+    if(ctaBase&&ctaBase.indexOf("{{")<0){$("cta").href=ctaBase+(ctaBase.indexOf("?")>=0?"&":"?")+"color="+encodeURIComponent(c.code)}
+    if(opt.moveSpectrum){var h=c.hsv;if(h[1]>0.04)st.hue=h[0];st.s=h[1];st.v=h[2];drawSpectrum()}else drawDots();
+  }
+  $("near").addEventListener("click",function(e){var b=e.target.closest("button[data-id]");if(b){select(byId[b.getAttribute("data-id")],{moveSpectrum:true,scrollGrid:true});openMax(b)}});
+
+  // hex entry
+  $("hexIn").addEventListener("input",function(e){var v=e.target.value.trim().replace(/^#?/,"");
+    if(/^[0-9a-f]{3}$/i.test(v))v=v.split("").map(function(x){return x+x}).join("");
+    if(!/^[0-9a-f]{6}$/i.test(v))return;
+    var r=parseInt(v.slice(0,2),16),g=parseInt(v.slice(2,4),16),b=parseInt(v.slice(4),16),n=nearest(toLab(r,g,b),1)[0];
+    var h=rgb2hsv(r,g,b);if(h[1]>0.04)st.hue=h[0];st.s=h[1];st.v=h[2];drawSpectrum();
+    select(n[1],{target:"#"+v.toUpperCase(),d:n[0],keepHex:true,scrollGrid:true})});
+
+  // buttons
+  root.addEventListener("click",function(e){var b=e.target.closest("[data-act]");if(!b||!st.sel)return;var a=b.getAttribute("data-act");
+    if(a==="copyCode")copy(st.sel.code,"Color code");
+    else if(a==="copyHex")copy(st.sel.hex,"Hex");
+    else if(a==="random")select(C[Math.floor(Math.random()*C.length)],{moveSpectrum:true,scrollGrid:true})});
+  $("big").addEventListener("click",function(){openMax($("big"))});
+  $("big").addEventListener("keydown",function(e){if(e.key==="Enter"||e.key===" "){e.preventDefault();openMax($("big"))}});
+
+  // maximized view
+  var mx=document.createElement("div"),lastFocus=null;
+  mx.className="vcp-max";mx.hidden=true;mx.setAttribute("role","dialog");mx.setAttribute("aria-modal","true");mx.setAttribute("aria-label","Full-screen color view");
+  mx.innerHTML='<span class="vcp-max-sheen" aria-hidden="true"></span>'+
+    '<button type="button" class="vcp-max-x" data-m="close" aria-label="Close full-screen view">Close <b aria-hidden="true">&times;</b></button>'+
+    '<button type="button" class="vcp-max-nav vcp-max-prev" data-m="prev" aria-label="Previous color">&#8249;</button>'+
+    '<button type="button" class="vcp-max-nav vcp-max-next" data-m="next" aria-label="Next color">&#8250;</button>'+
+    '<div class="vcp-max-info"><span class="vcp-max-sys" data-m-el="sys"></span><span class="vcp-max-code" data-m-el="code"></span>'+
+    '<dl class="vcp-max-specs"><div><dt>Hex</dt><dd data-m-el="hex"></dd></div><div><dt>RGB</dt><dd data-m-el="rgb"></dd></div><div><dt>LRV est.</dt><dd data-m-el="lrv"></dd></div><div><dt>Family</dt><dd data-m-el="fam"></dd></div></dl>'+
+    '<div class="vcp-max-btns"><button type="button" class="vcp-max-btn" data-m="copyCode">Copy code</button><button type="button" class="vcp-max-btn" data-m="copyHex">Copy hex</button>'+
+    (ctaBase&&ctaBase.indexOf("{{")<0?'<a class="vcp-max-btn vcp-max-cta" data-m-el="cta" href="#">'+esc($("cta").textContent)+'</a>':'')+'</div>'+
+    '<p class="vcp-max-note">Screen color is an approximation. Confirm with a physical sample. <span class="vcp-max-keys">Esc to close &middot; &larr; &rarr; to browse</span></p></div>';
+  document.body.appendChild(mx);
+  function m$(n){return mx.querySelector('[data-m-el="'+n+'"]')}
+  function paintMax(){var c=st.sel;if(!c)return;
+    mx.style.backgroundColor=c.hex;mx.classList.toggle("is-light",c.lrv>45);
+    m$("sys").textContent=SYS[c.sys]+" color reference";m$("code").textContent=c.code;m$("hex").textContent=c.hex;
+    m$("rgb").textContent=c.r+", "+c.g+", "+c.b;m$("lrv").textContent=c.lrv.toFixed(1);
+    m$("fam").textContent=FAM.filter(function(f){return f[0]===c.fam})[0][1].replace(/s$/,"");
+    if(m$("cta"))m$("cta").href=$("cta").href}
+  function openMax(from){if(!st.sel)return;lastFocus=from||document.activeElement;paintMax();mx.hidden=false;
+    document.documentElement.classList.add("vcp-lock");requestAnimationFrame(function(){mx.classList.add("on")});mx.querySelector(".vcp-max-x").focus()}
+  function closeMax(){mx.classList.remove("on");mx.hidden=true;document.documentElement.classList.remove("vcp-lock");if(lastFocus&&lastFocus.focus)try{lastFocus.focus({preventScroll:true})}catch(e){}}
+  function step(d){var L=(st.list&&st.list.length&&st.list.indexOf(st.sel)>=0)?st.list:C,i=L.indexOf(st.sel);
+    select(L[(i+d+L.length)%L.length],{moveSpectrum:true,scrollGrid:true});paintMax()}
+  mx.addEventListener("click",function(e){var b=e.target.closest("[data-m]");
+    if(!b){if(!e.target.closest(".vcp-max-info"))closeMax();return}
+    var a=b.getAttribute("data-m");
+    if(a==="close")closeMax();else if(a==="prev")step(-1);else if(a==="next")step(1);
+    else if(a==="copyCode")copy(st.sel.code,"Color code");else if(a==="copyHex")copy(st.sel.hex,"Hex")});
+  mx.addEventListener("keydown",function(e){if(e.key==="Escape")closeMax();else if(e.key==="ArrowLeft")step(-1);else if(e.key==="ArrowRight")step(1);
+    else if(e.key==="Tab"){var f=mx.querySelectorAll("button,a[href]"),first=f[0],last=f[f.length-1];
+      if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+  var tx=null;mx.addEventListener("touchstart",function(e){tx=e.touches[0].clientX},{passive:true});
+  mx.addEventListener("touchend",function(e){if(tx==null)return;var dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>60)step(dx<0?1:-1)});
+
+  // tabs
+  Array.prototype.forEach.call(root.querySelectorAll(".vcp-tab"),function(t){t.addEventListener("click",function(){
+    st.tab=t.getAttribute("data-tab");
+    Array.prototype.forEach.call(root.querySelectorAll(".vcp-tab"),function(x){x.setAttribute("aria-selected",String(x===t))});
+    Array.prototype.forEach.call(root.querySelectorAll(".vcp-pane"),function(p){p.hidden=p.getAttribute("data-pane")!==st.tab});
+    if(st.tab==="spectrum")drawSpectrum()})});
+
+  // spectrum
+  var sv=$("sv"),hue=$("hue");
+  function drawDots(){
+    var H=st.hue,html="";
+    C.forEach(function(c){var h=c.hsv,dh=Math.abs(h[0]-H);dh=Math.min(dh,360-dh);
+      if(h[1]<0.05||dh<=7){html+='<i data-id="'+c.id+'" class="'+(st.sel===c?"on":"")+'" style="left:'+(h[1]*100).toFixed(2)+"%;top:"+((1-h[2])*100).toFixed(2)+"%;background:"+c.hex+'" title="'+esc(c.code)+'"></i>'}});
+    $("dots").innerHTML=html}
+  function drawSpectrum(){
+    sv.style.backgroundColor="hsl("+st.hue+",100%,50%)";
+    $("knob").style.left=(st.s*100)+"%";$("knob").style.top=((1-st.v)*100)+"%";
+    $("hknob").style.top=(st.hue/360*100)+"%";drawDots()}
+  function pickFromSV(){var rgb=hsv2rgb(st.hue,st.s,st.v),n=nearest(toLab(rgb[0],rgb[1],rgb[2]),1)[0];
+    $("knob").style.background="rgb("+rgb.join(",")+")";
+    select(n[1],{target:"#"+hex2(rgb[0])+hex2(rgb[1])+hex2(rgb[2]),d:n[0],scrollGrid:false})}
+  function drag(el,fn){el.addEventListener("pointerdown",function(e){
+    if(e.target.matches(".vcp-dots i")){select(byId[e.target.getAttribute("data-id")],{moveSpectrum:true});openMax(e.target);return}
+    el.setPointerCapture(e.pointerId);fn(e);
+    function mv(ev){fn(ev)}function up(){el.removeEventListener("pointermove",mv);el.removeEventListener("pointerup",up);el.removeEventListener("pointercancel",up)}
+    el.addEventListener("pointermove",mv);el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up)})}
+  drag(sv,function(e){var r=sv.getBoundingClientRect();st.s=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));st.v=Math.max(0,Math.min(1,1-(e.clientY-r.top)/r.height));drawSpectrum();pickFromSV()});
+  drag(hue,function(e){var r=hue.getBoundingClientRect();st.hue=Math.max(0,Math.min(359.9,(e.clientY-r.top)/r.height*360));drawSpectrum();pickFromSV()});
+
+  renderGrid();
+  var def=(root.getAttribute("data-default")||"").replace(/\s+/g,"");
+  var hash=decodeURIComponent((location.hash||"").slice(1)).replace(/\s+/g,"");
+  select(byId[hash]||byId[def]||byId["RAL5009"]||C[900],{moveSpectrum:true,scrollGrid:true});
+}
+function boot(){Array.prototype.forEach.call(document.querySelectorAll("[data-vcp]"),init)}
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+})();
+</script>
+</body>
+</html>
